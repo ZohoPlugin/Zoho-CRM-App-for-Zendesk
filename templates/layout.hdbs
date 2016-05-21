@@ -1,0 +1,8 @@
+<header>
+  <a class="zcrm-header" target="_blank">
+  	<span class="logo"></span>
+  	<h3>{{setting "name"}}</h3>
+  </a>
+</header>
+<section data-main>
+</section>

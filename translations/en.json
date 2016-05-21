@@ -1,0 +1,39 @@
+{
+  "app": {
+    "description": "Contextual customer information right inside every Zendesk ticket of Zoho CRM",
+    "name": "Zoho CRM",
+    "parameters": {
+      "authtoken" : { "label": "Auth Token", "helpText": "Don't know how to get an Auth Token? Please visit the help: https://www.zoho.com/crm/help/api/using-authentication-token.html"}
+     }
+  },
+  "zohocrm_app": {
+    "contact_information": "Zoho CRM Contact Information",
+    "account_information": "Zoho CRM Account Information",
+    "lead_information": "Zoho CRM Lead Information",
+    "close": "Close",
+    "status": "Status",
+    "contact": "Contact",
+    "lead": "Lead",
+    "account": "Account",
+    "details": "Details",
+    "notes": "Notes",
+    "potentials": "Potentials",
+    "products": "Products",
+    "events": "Events",
+    "owner": "Owner",
+    "industry": "Industry",
+    "activity_type": "Activity Type",
+    "location": "Location",
+    "back_to_contact": "Back to Contact",
+    "start_time": "Start",
+    "end_time": "End",
+    "open_in_zohocrm": "Open in Zoho CRM",
+    "phone": "Phone",
+    "mobile": "Mobile",
+    "amount": "Amount",
+    "unable_to_fetch_data": "Unable to fetch data from Zoho CRM.",
+    "no_records_matched": "No matching records found in Zoho CRM for this requestor email.",
+    "no_data_found": "No data found.",
+    "not_specified": "Not specified"
+  }
+}

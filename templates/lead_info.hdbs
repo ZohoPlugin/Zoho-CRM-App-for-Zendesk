@@ -1,0 +1,58 @@
+<div class="clear maindiv">
+    <div>
+        <div class="profile_img_div">
+            <img class="profile_img" src="{{assetURL 'contact-nophoto.png'}}" width="60" height="60" alt="user">
+        </div>
+        <div class="profile_info">
+            <div>
+                <div>
+                    <div class="zclin15">
+                    <a class="open-model bold">{{lead.lead_name.name}}</a>&nbsp;-&nbsp;<span class="zclin15">{{lead.company}}</span><a class="openin_newtab" title="{{t 'zohocrm_app.open_in_zohocrm'}}" href="{{lead.lead_name.link}}" target="_blank"></a>
+                    </div>
+                    <div class="zclin15"><a href="{{lead.lead_name.zdesk_userprofile_link}}" target="_top">{{lead.email}}</a></div>
+                    <div class="zclin15">
+                        <span class="clr8">{{t 'zohocrm_app.status'}}:</span>&nbsp;
+                        {{t 'zohocrm_app.lead'}}
+                    </div>
+                    <div class="zclin15">
+                        {{#if lead.has_mobile}}
+                            <span class="clr8">{{t 'zohocrm_app.mobile'}}:</span>&nbsp;
+                            {{lead.mobile}}
+                        {{else}}
+                            {{#if lead.has_phone}}
+                                <span class="clr8">{{t 'zohocrm_app.phone'}}:</span>&nbsp;
+                                {{lead.phone}}
+                            {{else}}
+                                <span class="clr8">{{t 'zohocrm_app.mobile'}}:</span>&nbsp;
+                                {{t 'zohocrm_app.not_specified'}}
+                            {{/if}}
+                        {{/if}}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="pT15">
+            <ul class="tabs-menu">
+                <li class="current crm_fields">{{t 'zohocrm_app.details'}}</li>
+                <li class="notes">{{t 'zohocrm_app.notes'}}</li>
+                <li class="events">{{t 'zohocrm_app.events'}}</li>
+            </ul>
+        </div>
+        <div class="loading_spinner pT10">
+  			<h3>{{spinner "dotted"}}</h3>
+		</div>
+        <div class="data_div" class="clr8 zcctchts pT10">
+        </div>
+    </div>
+</div>
+<div id="popupview-model" class="popupview-model modal hide fade" tabindex="-1" role="dialog" aria-labelledby="popupLabel" aria-hidden="true">
+  <div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+    <h3 id="myModalLabel">{{t 'zohocrm_app.lead_information'}}</h3>
+  </div>
+  <div class="modal-body">
+  </div>
+  <div class="modal-footer">
+    <button class="btn" data-dismiss="modal" aria-hidden="true">{{t 'zohocrm_app.close'}}</button>
+  </div>
+</div>
