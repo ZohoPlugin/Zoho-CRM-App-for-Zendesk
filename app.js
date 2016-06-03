@@ -19,6 +19,10 @@
       'get_zcrm_account_info.fail': 'handleFailure',
       'get_related_records.done': 'showRelatedRecords',
       'get_related_records.fail': 'handleSubTabFailure',
+      'get_activities.done': 'showActivities',
+      'get_activities.fail': 'handleSubTabFailure',
+      'get_open_activities.done': 'showOpenActivities',
+      'get_open_activities.fail': 'handleSubTabFailure',
       'click .open-model': function() {
       	if (!this.$('#popupview-model').is(':visible')) {
       		// show popup if its not already open
@@ -54,8 +58,8 @@
       'click .potentials': function() {
       	this.switchSubTab('potentials', 'Potentials');
       },
-      'click .events': function() {
-      	this.switchSubTab('events', 'Events');
+      'click .open_activities': function() {
+      	this.switchSubTab('open_activities', 'Activities');
       },
       'click .open-account': function() {
       	if (!this.$('#popupview-model').is(':visible')) {
@@ -486,24 +490,6 @@
 				finalData.template_name = 'products';
 				finalData.products = productsJson;
 			}
-			else if (relatedModule == 'Events') {
-				var eventsJson = [];
-				_.each(new_records_array, function(record) {
-					var eventInfo = {};
-
-					eventInfo['subject'] = record['Subject'];
-					eventInfo.link = helpers.fmt('%@/crm/EntityInfo.do?module=Events&id=%@', ZOHOCRM_URL, record['ACTIVITYID']);
-					eventInfo['owner'] = record['Event Owner'];
-					eventInfo['start_time'] = record['Start DateTime'];
-					eventInfo['end_time'] = record['End DateTime'];
-					eventInfo['venue'] = (_.has(record, 'Venue') ? record['Venue'] : "--");
-
-					eventsJson.push(eventInfo);
-				});
-
-				finalData.template_name = 'events_activity';
-				finalData.events = eventsJson;
-			}
 		}
 
 		if (typeof(finalData.template_name) == "undefined") {
@@ -513,8 +499,129 @@
 		this.$('.data_div').html(html);
 	},
 
+	showActivities: function(data) {
+		if (typeof(data.relations) != "undefined") {
+			var recordId = this.crm_data.rec_id;
+			var href_val = '';
+
+			_.each(data.relations, function(relation) {
+				if (relation.name === "Activities" && relation.module === "Activities") {
+					href_val = relation.href;
+				}
+			});
+
+			if (href_val !== '') {
+				this.fetchZCRMOpenActivities(href_val, recordId);
+				return;
+			}
+		}
+		
+		this.showSpinner(false);
+		var html = this.renderTemplate('subtab-nodata', {});
+		this.$('.data_div').html(html);
+	},
+
+	showOpenActivities: function(data) {
+		this.showSpinner(false);
+
+		if (typeof(data) == "undefined" || typeof(data.data) == "undefined") {
+			var html = this.renderTemplate('subtab-nodata', {});
+			this.$('.data_div').html(html);
+		}
+		else {
+			var activitiesJson = [];
+			var current_obj = this;
+			_.each(data.data, function(activity) {
+				var activity_id = activity.id;
+				var activity_type = activity.Activity_Type;
+				var activity_owner = activity.Activity_Owner.name;
+				var subject = activity.Subject;
+				var is_event = false;
+				var is_task = false;
+				var is_call = false;
+
+				var orig_activity_owner = activity_owner;
+				if (activity_owner.length > 20) {
+					activity_owner = activity_owner.substring(0, 20) + "...";
+				}
+				var orig_subject = subject;
+				if (subject.length > 30) {
+					subject = subject.substring(0, 30) + "...";
+				}
+
+				var activityInfo = {};
+				activityInfo['type'] = activity_type;
+				activityInfo['owner'] = activity_owner;
+				activityInfo['orig_owner'] = orig_activity_owner;
+				activityInfo['subject'] = subject;
+				activityInfo['orig_subject'] = orig_subject;
+				activityInfo['link'] = helpers.fmt('%@/crm/EntityInfo.do?module=%@&id=%@', current_obj.resources.ZOHOCRM_URL, activity_type, activity_id);
+
+				if (activity_type == 'Events') {
+					is_event = true;
+
+					var date_str = '';
+					var time_str = '';
+					var venue = '';
+
+					var start_datetime = activity.Start_DateTime;
+					var date_obj = new Date(Date.parse(start_datetime));
+					date_str = current_obj.formatDate(date_obj, 'dd/MM/yyyy');
+					time_str = current_obj.formatDate(date_obj, 'HH:mm t');
+
+					if (typeof(activity.Venue) != 'undefined' && activity.Venue != 'null') {
+						venue = activity.Venue;
+					}
+
+					activityInfo['date'] = date_str;
+					activityInfo['time'] = time_str;
+					activityInfo['venue'] = venue;
+				}
+				else if (activity_type == 'Tasks') {
+					is_task = true;
+
+					var activity_status = activity.Status;
+					var priority = activity.Priority;
+					var due_date = activity.Due_Date;
+					if (due_date !== 'null' && due_date !== '') {
+						var due_date_obj = new Date(Date.parse(due_date));
+						due_date = current_obj.formatDate(due_date_obj, 'dd/MM/yyyy');
+					}
+					else {
+						due_date = '';
+					}
+
+					activityInfo['status'] = activity_status;
+					activityInfo['priority'] = priority;
+					activityInfo['due_date'] = due_date;
+				}
+				else if (activity_type == 'Calls') {
+					is_call = true;
+
+					activityInfo['date'] = '';
+					activityInfo['time'] = '';
+					activityInfo['call_type'] = '';
+				}
+				activityInfo.is_event = is_event;
+				activityInfo.is_task = is_task;
+				activityInfo.is_call = is_call;
+
+				activitiesJson.push(activityInfo);
+			});
+
+			var activitiesData = {};
+			activitiesData.open_activities = activitiesJson;
+
+			var activitiesHtml = this.renderTemplate('open_activities', {'data': activitiesData});
+			this.$('.data_div').html(activitiesHtml);
+		}
+	},
+
 	handleSubTabFailure: function() {
 		this.showSpinner(false);
+
+		var html = this.renderTemplate('subtab-error', {});
+		this.$('.data_div').html(html);
 	},
 
 	switchSubTab: function(tab_name, module_name) {
@@ -527,6 +634,9 @@
 			this.$('.data_div').html(html);
 
 			this.showSpinner(false);
+		}
+		else if (tab_name == 'open_activities') {
+			this.fetchZCRMActivities(this.crm_data.module);
 		}
 		else {			
       		this.fetchZCRMRelatedRecords(this.crm_data.module, this.crm_data.rec_id, module_name);
@@ -547,6 +657,14 @@
 
     fetchZCRMRelatedRecords: function(module, recId, relatedModule) {
     	this.ajax('get_related_records', module, recId, relatedModule);
+    },
+
+    fetchZCRMActivities: function(module) {
+    	this.ajax('get_activities', module);
+    },
+
+    fetchZCRMOpenActivities: function(href, entity_id) {
+    	this.ajax('get_open_activities', href, entity_id);
     },
 
     requests: {
@@ -581,6 +699,23 @@
 				dataType: 'json',
 				secure: true
 			};
+		},
+		get_activities: function(module_name) {
+			return {
+				url: helpers.fmt('%@/crm/v2/settings/modules/%@?authtoken={{setting.authtoken}}&scope=crmapi', this.resources.ZOHOCRM_URL, module_name),
+				type: 'GET',
+				dataType: 'json',
+				secure: true
+			};
+		},
+		get_open_activities: function(href, entity_id) {
+			href = href.replace("{ENTITYID}", entity_id);
+			return {
+				url: helpers.fmt('%@/crm/v2/%@?authtoken={{setting.authtoken}}&scope=crmapi', this.resources.ZOHOCRM_URL, href),
+				type: 'GET',
+				dataType: 'json',
+				secure: true
+			};
 		}
     },
 
@@ -597,7 +732,63 @@
 
       this.$('.tabs-menu li').removeClass('current');
       this.$('.tabs-menu li' + itemClass).addClass('current');
-    }
+    },
+
+    formatDate: function(date, format) {
+    	var day = date.getDate(),
+	    month = date.getMonth() + 1,
+	    year = date.getFullYear(),
+	    hours = date.getHours(),
+	    minutes = date.getMinutes(),
+	    seconds = date.getSeconds();
+
+	    if (!format) {
+	        format = "MM/dd/yyyy";
+	    }
+
+	    format = format.replace("MM", month.toString().replace(/^(\d)$/, '0$1'));
+
+	    if (format.indexOf("yyyy") > -1) {
+	        format = format.replace("yyyy", year.toString());
+	    } else if (format.indexOf("yy") > -1) {
+	        format = format.replace("yy", year.toString().substr(2, 2));
+	    }
+
+	    format = format.replace("dd", day.toString().replace(/^(\d)$/, '0$1'));
+
+	    if (format.indexOf("t") > -1) {
+	        if (hours > 11) {
+	            format = format.replace("t", "PM");
+	        } else {
+	            format = format.replace("t", "AM");
+	        }
+	    }
+
+	    if (format.indexOf("HH") > -1) {
+	        format = format.replace("HH", hours.toString().replace(/^(\d)$/, '0$1'));
+	    }
+
+	    if (format.indexOf("hh") > -1) {
+	        if (hours > 12) {
+	            hours -= 12;
+	        }
+
+	        if (hours === 0) {
+	            hours = 12;
+	        }
+	        format = format.replace("hh", hours.toString().replace(/^(\d)$/, '0$1'));
+	    }
+
+	    if (format.indexOf("mm") > -1) {
+	        format = format.replace("mm", minutes.toString().replace(/^(\d)$/, '0$1'));
+	    }
+
+	    if (format.indexOf("ss") > -1) {
+	        format = format.replace("ss", seconds.toString().replace(/^(\d)$/, '0$1'));
+	    }
+
+	    return format;
+	}
   };
 
 }());

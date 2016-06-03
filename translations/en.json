@@ -3,7 +3,7 @@
     "description": "Contextual customer information right inside every Zendesk ticket of Zoho CRM",
     "name": "Zoho CRM",
     "parameters": {
-      "authtoken" : { "label": "Auth Token", "helpText": "Don't know how to get an Auth Token? Please visit the help: https://www.zoho.com/crm/help/api/using-authentication-token.html"}
+      "authtoken" : { "label": "Auth Token", "helpText": "To know how to get an Auth Token, please visit: https://www.zoho.com/crm/help/zoho-crm-for-zendesk.html"}
      }
   },
   "zohocrm_app": {
@@ -19,7 +19,7 @@
     "notes": "Notes",
     "potentials": "Potentials",
     "products": "Products",
-    "events": "Events",
+    "open_activities": "Activities",
     "owner": "Owner",
     "industry": "Industry",
     "activity_type": "Activity Type",

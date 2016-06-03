@@ -36,7 +36,7 @@
                 <li class="current crm_fields">{{t 'zohocrm_app.details'}}</li>
                 <li class="notes">{{t 'zohocrm_app.notes'}}</li>
                 <li class="potentials">{{t 'zohocrm_app.potentials'}}</li>
-                <li class="events">{{t 'zohocrm_app.events'}}</li>
+                <li class="open_activities">{{t 'zohocrm_app.open_activities'}}</li>
             </ul>
         </div>
         <div class="loading_spinner pT10">

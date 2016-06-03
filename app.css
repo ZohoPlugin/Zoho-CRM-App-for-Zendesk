@@ -86,7 +86,7 @@ ul {
     line-height: 25px;
     float: left;
     color: #000;
-    padding: 0px 10px 0 10px;
+    padding: 0px 7px 0 7px;
     text-transform: uppercase;
     cursor: pointer;
 }
@@ -207,7 +207,6 @@ ul {
 .light_label {
     display: inline-block;
     color: #888;
-    font-size: 11px;
 }
 
 .data_div {
