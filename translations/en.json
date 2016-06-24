@@ -33,6 +33,7 @@
     "amount": "Amount",
     "unable_to_fetch_data": "Unable to fetch data from Zoho CRM.",
     "no_records_matched": "No matching records found in Zoho CRM for this requestor email.",
+    "no_account_records_matched": "No matching records found in Zoho CRM for this organization.",
     "no_data_found": "No data found.",
     "not_specified": "Not specified"
   }

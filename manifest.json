@@ -2,13 +2,13 @@
   "name": "Zoho CRM",
   "author": {
     "name": "Zoho",
-    "email": "plugin-support@zohocorp.com",
+    "email": "support@zohoextensions.com",
     "url": "http://www.zoho.com"
   },
   "defaultLocale": "en",
   "private": false,
-  "location":  ["ticket_sidebar"],
-  "version": "1.0",
+  "location":  ["ticket_sidebar", "user_sidebar", "organization_sidebar"],
+  "version": "1.0.1",
   "frameworkVersion": "1.0",
   "domainWhitelist": ["crm.zoho.com"],
   "parameters": [

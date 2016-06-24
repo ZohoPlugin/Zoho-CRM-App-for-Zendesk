@@ -9,7 +9,7 @@
                     <div class="zclin15">
                     <a class="open-model bold">{{contact.contact_name.name}}</a>&nbsp;-&nbsp;<a class="open-account">{{contact.account_name.name}}</a><a class="openin_newtab" title="{{t 'zohocrm_app.open_in_zohocrm'}}" href="{{contact.contact_name.link}}" target="_blank"></a>
                     </div>
-                    <div class="zclin15"><a href="{{contact.contact_name.zdesk_userprofile_link}}" target="_top">{{contact.email}}</a></div>
+                    <div class="zclin15"><a href="{{contact.contact_name.zdesk_userprofile_link}}" target="_blank">{{contact.email}}</a></div>
                     <div class="zclin15">
                         <span class="clr8">{{t 'zohocrm_app.status'}}:</span>&nbsp;
                         {{t 'zohocrm_app.contact'}}

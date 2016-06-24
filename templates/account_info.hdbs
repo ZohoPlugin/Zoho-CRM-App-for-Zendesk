@@ -1,5 +1,7 @@
 <div class="clear maindiv">
-    <div class="pB10"><a class="back_to_contact clrblue">&#171; {{t 'zohocrm_app.back_to_contact'}}</a></div>
+    {{#if account.show_backtocontact_link}} 
+      <div class="pB10"><a class="back_to_contact clrblue">&#171; {{t 'zohocrm_app.back_to_contact'}}</a></div>
+    {{/if}}  
     <div>
         <div class="profile_img_div">
             <img src="{{assetURL 'account-logo.png'}}" width="60" height="60" alt="user">

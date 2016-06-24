@@ -69,7 +69,7 @@
       },
       'click .back_to_contact': function() {
       	this.switchTo('loading_screen');
-      	this.fetchZCRMContactInfo(this.ticket().requester().email());
+      	this.fetchZCRMContactInfo(this.email_id);
       }
     },
 
@@ -77,14 +77,29 @@
     	
     	this.$('.zcrm-header').attr('href', this.resources.ZOHOCRM_URL);
 
-		var ticket = this.ticket();
-		var requester = ticket.requester();
-		this.email_id = requester.email();
+    	var current_location = this.currentLocation();
 
 		// to maintain zoho crm contact/lead data
 		this.crm_data = {};
+		this.current_location = current_location;
 
-		this.fetchZCRMContactInfo(this.email_id);
+    	if (current_location == 'user_sidebar') {
+    		this.email_id = this.user().email();
+
+    		this.fetchZCRMContactInfo(this.email_id);
+    	}
+    	else if (current_location == 'organization_sidebar') {
+    		this.account_name = this.organization().name();
+
+    		this.fetchZCRMAccountInfo(this.account_name);
+    	}
+    	else if (current_location == 'ticket_sidebar') {
+    		var ticket = this.ticket();
+			var requester = ticket.requester();
+			this.email_id = requester.email();
+
+			this.fetchZCRMContactInfo(this.email_id);
+    	}
 	},
 
 	destroyApp: function() {
@@ -122,7 +137,7 @@
 			var contact_name = {};
 			contact_name.name = _.result(crm_fields_json, 'First Name', '') + ' ' + crm_fields_json['Last Name'];
 			contact_name.link = helpers.fmt('%@/crm/EntityInfo.do?module=Contacts&id=%@', this.resources.ZOHOCRM_URL, crm_fields_json['CONTACTID']);
-			contact_name.zdesk_userprofile_link = helpers.fmt('/agent/tickets/%@/requester/requested_tickets', this.ticket().id());
+			contact_name.zdesk_userprofile_link = helpers.fmt('mailto:%@', this.email_id);
 			//contact_name.photo = helpers.fmt('%@/crm/private/json/Contacts/downloadPhoto?authtoken='+this.setting('authtoken')+'&scope=crmapi&id=%@', this.resources.ZOHOCRM_URL, crm_fields_json['CONTACTID']);
 			
 			var has_account = _.has(crm_fields_json, 'Account Name');
@@ -221,7 +236,7 @@
 			var lead_name = {};
 			lead_name.name = _.result(crm_fields_json, 'First Name', '') + ' ' + crm_fields_json['Last Name'];
 			lead_name.link = helpers.fmt('%@/crm/EntityInfo.do?module=Leads&id=%@', this.resources.ZOHOCRM_URL, crm_fields_json['LEADID']);
-			lead_name.zdesk_userprofile_link = helpers.fmt('/agent/tickets/%@/requester/requested_tickets', this.ticket().id());
+			lead_name.zdesk_userprofile_link = helpers.fmt('mailto:%@', this.email_id);
 			//lead_name.photo = helpers.fmt('%@/crm/private/json/Leads/downloadPhoto?authtoken='+this.setting('authtoken')+'&scope=crmapi&id=%@', this.resources.ZOHOCRM_URL, crm_fields_json['LEADID']);
 			
 			var company = _.result(crm_fields_json, 'Company', '');
@@ -294,7 +309,7 @@
 
 	showAccountInfo: function(data) {
 		if (typeof(data.response.nodata) != 'undefined') {
-			this.switchTo('nodata_screen');
+			this.switchTo('org_nodata_screen');
 		}
 		else if (typeof(data.response.error) != 'undefined') {
 			this.switchTo('error_screen');
@@ -388,6 +403,12 @@
 			account_info.has_phone = (phone !== "");
 			account_info.phone = phone;
 			account_info.other_fields = other_fields;
+			if (this.current_location === 'organization_sidebar') {
+				account_info.show_backtocontact_link = false;
+			}
+			else {
+				account_info.show_backtocontact_link = true;
+			}
 
 			this.crm_data = account_info;
 			this.crm_data.module = 'Accounts';
