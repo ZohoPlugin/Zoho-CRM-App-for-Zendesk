@@ -17,6 +17,10 @@
       "type": "text",
       "required": true,
       "secure": true
+    },
+    {
+      "name": "zohoeu",
+      "type": "checkbox"
     }
   ]
 }

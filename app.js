@@ -5,7 +5,8 @@
   	defaultState: 'loading_screen',
 
   	resources: {
-  		ZOHOCRM_URL: 'https://crm.zoho.com'
+  		ZOHOCRM_URL: 'https://crm.zoho.com',
+  		ZOHOCRM_URL_EU: 'https://crm.zoho.eu'
   	},
 
     events: {
@@ -19,10 +20,6 @@
       'get_zcrm_account_info.fail': 'handleFailure',
       'get_related_records.done': 'showRelatedRecords',
       'get_related_records.fail': 'handleSubTabFailure',
-      'get_activities.done': 'showActivities',
-      'get_activities.fail': 'handleSubTabFailure',
-      'get_open_activities.done': 'showOpenActivities',
-      'get_open_activities.fail': 'handleSubTabFailure',
       'click .open-model': function() {
       	if (!this.$('#popupview-model').is(':visible')) {
       		// show popup if its not already open
@@ -70,11 +67,22 @@
       'click .back_to_contact': function() {
       	this.switchTo('loading_screen');
       	this.fetchZCRMContactInfo(this.email_id);
+      },
+      'change .activity_type': function() {
+      	if (this.$('#popupview-model').is(':visible')) {
+      		this.$('.activity_type').val(this.$('#popupview-model .activity_type').val());
+      	}
+      	var sel_type = this.$('.activity_type').val();
+      	this.fetchZCRMRelatedRecords(this.crm_data.module, this.crm_data.rec_id, sel_type);
       }
     },
 
     activateApp: function() {
-    	
+    
+	if (this.setting('zohoeu')) {
+		this.resources.ZOHOCRM_URL = this.resources.ZOHOCRM_URL_EU;
+	}
+	
     	this.$('.zcrm-header').attr('href', this.resources.ZOHOCRM_URL);
 
     	var current_location = this.currentLocation();
@@ -422,13 +430,33 @@
 	},
 
 	showRelatedRecords: function(data) {
+		var self = this;
+
 		this.showSpinner(false);
 
 		var finalData = {};
 
+		var isActivities = false;
+		var activityType = '';
+		if (typeof(data.response.uri) != 'undefined') {
+			if (data.response.uri.indexOf('Calls') != -1) {
+				isActivities = true;
+				activityType = 'Calls';
+			}
+			if (data.response.uri.indexOf('Events') != -1) {
+				isActivities = true;
+				activityType = 'Events';
+			}
+			if (data.response.uri.indexOf('Tasks') != -1) {
+				isActivities = true;
+				activityType = 'Tasks';
+			}
+		}
+
 		if (typeof(data.response.nodata) != 'undefined') {
 			finalData.nodata = true;
 			finalData.template_name = 'subtab-nodata';
+			finalData.is_activities = isActivities;
 		}
 		else if (typeof(data.response.error) != 'undefined') {
 			finalData.error = true;
@@ -491,25 +519,135 @@
 				finalData.template_name = 'potentials';
 				finalData.potentials = potentialsJson;
 			}
-			else if (relatedModule == 'Products') {
-				var productsJson = [];
+			else if (relatedModule == 'Calls') {
+				var callsJson = [];
 				_.each(new_records_array, function(record) {
-					var productInfo = {};
 
-					var status = (_.has(record, 'Product Active') ? record['Product Active'] : "true");
-					status = (status == "true") ? "Active" : "Inactive";
+					var activity_owner = record['Call Owner'];
+					var subject = record['Subject'];
 
-					productInfo['name'] = record['Product Name'];
-					productInfo.link = helpers.fmt('%@/crm/EntityInfo.do?module=Products&id=%@', ZOHOCRM_URL, record['PRODUCTID']);
-					productInfo['product_code'] = (_.has(record, 'Product Code') ? record['Product Code'] : "--");
-					productInfo['category'] = (_.has(record, 'Product Category') ? record['Product Category'] : "--");
-					productInfo['status'] = status;
+					var orig_activity_owner = activity_owner;
+					if (activity_owner.length > 20) {
+						activity_owner = activity_owner.substring(0, 20) + "...";
+					}
+					var orig_subject = subject;
+					if (subject.length > 30) {
+						subject = subject.substring(0, 30) + "...";
+					}
 
-					productsJson.push(productInfo);
+					var activityInfo = {};
+					activityInfo['type'] = 'Call';
+					activityInfo['owner'] = activity_owner;
+					activityInfo['orig_owner'] = orig_activity_owner;
+					activityInfo['subject'] = subject;
+					activityInfo['orig_subject'] = orig_subject;
+					activityInfo['link'] = helpers.fmt('%@/crm/EntityInfo.do?module=%@&id=%@', ZOHOCRM_URL, 'Calls', record['ACTIVITYID']);
+					
+					var callDateTime = (_.has(record, 'Call Start Time') ? record['Call Start Time'] : '');
+					var callDate = '--';
+					var callTime = '--';
+					if (callDateTime !== '') {
+						var date_obj = new Date(Date.parse(callDateTime));
+						callDate = self.formatDate(date_obj, 'dd/MM/yyyy');
+						callTime = self.formatDate(date_obj, 'HH:mm t');
+					}
+					activityInfo['date'] = callDate;
+					activityInfo['time'] = callTime;
+					activityInfo['call_type'] = record['Call Type'];
+					activityInfo.is_call = true;
+
+					callsJson.push(activityInfo);
 				});
 
-				finalData.template_name = 'products';
-				finalData.products = productsJson;
+				finalData.template_name = 'open_activities';
+				finalData.open_activities = callsJson;
+			}
+			else if (relatedModule == 'Events') {
+				var eventsJson = [];
+				_.each(new_records_array, function(record) {
+
+					var activity_owner = record['Event Owner'];
+					var subject = record['Subject'];
+
+					var orig_activity_owner = activity_owner;
+					if (activity_owner.length > 20) {
+						activity_owner = activity_owner.substring(0, 20) + "...";
+					}
+					var orig_subject = subject;
+					if (subject.length > 30) {
+						subject = subject.substring(0, 30) + "...";
+					}
+
+					var activityInfo = {};
+					activityInfo['type'] = 'Event';
+					activityInfo['owner'] = activity_owner;
+					activityInfo['orig_owner'] = orig_activity_owner;
+					activityInfo['subject'] = subject;
+					activityInfo['orig_subject'] = orig_subject;
+					activityInfo['link'] = helpers.fmt('%@/crm/EntityInfo.do?module=%@&id=%@', ZOHOCRM_URL, 'Events', record['ACTIVITYID']);
+
+					var venue = (_.has(record, 'Venue') ? record['Venue'] : '');
+					var eventDateTime = (_.has(record, 'Start DateTime') ? record['Start DateTime'] : '');
+
+					var eventDate = '--';
+					var eventTime = '--';
+					if (eventDateTime !== '') {
+						var date_obj = new Date(Date.parse(eventDateTime));
+						eventDate = self.formatDate(date_obj, 'dd/MM/yyyy');
+						eventTime = self.formatDate(date_obj, 'HH:mm t');
+					}
+					activityInfo['date'] = eventDate;
+					activityInfo['time'] = eventTime;
+					activityInfo['venue'] = venue;
+					activityInfo.is_event = true;
+
+					eventsJson.push(activityInfo);
+				});
+
+				finalData.template_name = 'open_activities';
+				finalData.open_activities = eventsJson;
+			}
+			else if (relatedModule == 'Tasks') {
+				var tasksJson = [];
+				_.each(new_records_array, function(record) {
+
+					var activity_owner = record['Task Owner'];
+					var subject = record['Subject'];
+
+					var orig_activity_owner = activity_owner;
+					if (activity_owner.length > 20) {
+						activity_owner = activity_owner.substring(0, 20) + "...";
+					}
+					var orig_subject = subject;
+					if (subject.length > 30) {
+						subject = subject.substring(0, 30) + "...";
+					}
+
+					var activityInfo = {};
+					activityInfo['type'] = 'Task';
+					activityInfo['owner'] = activity_owner;
+					activityInfo['orig_owner'] = orig_activity_owner;
+					activityInfo['subject'] = subject;
+					activityInfo['orig_subject'] = orig_subject;
+					activityInfo['link'] = helpers.fmt('%@/crm/EntityInfo.do?module=%@&id=%@', ZOHOCRM_URL, 'Tasks', record['ACTIVITYID']);
+
+					var status = (_.has(record, 'Status') ? record['Status'] : '--');
+					var priority = (_.has(record, 'Priority') ? record['Priority'] : '--');
+					var dueDate = (_.has(record, 'Due Date') ? record['Due Date'] : '--');
+					if (dueDate != '--') {
+						var date_obj = new Date(Date.parse(dueDate));
+						dueDate = self.formatDate(date_obj, 'dd/MM/yyyy');
+					}
+					activityInfo['status'] = status;
+					activityInfo['priority'] = priority;
+					activityInfo['due_date'] = dueDate;
+					activityInfo.is_task = true;
+
+					tasksJson.push(activityInfo);
+				});
+
+				finalData.template_name = 'open_activities';
+				finalData.open_activities = tasksJson;
 			}
 		}
 
@@ -518,123 +656,9 @@
 		}
 		var html = this.renderTemplate(finalData.template_name, {'data': finalData});
 		this.$('.data_div').html(html);
-	},
 
-	showActivities: function(data) {
-		if (typeof(data.relations) != "undefined") {
-			var recordId = this.crm_data.rec_id;
-			var href_val = '';
-
-			_.each(data.relations, function(relation) {
-				if (relation.name === "Activities" && relation.module === "Activities") {
-					href_val = relation.href;
-				}
-			});
-
-			if (href_val !== '') {
-				this.fetchZCRMOpenActivities(href_val, recordId);
-				return;
-			}
-		}
-		
-		this.showSpinner(false);
-		var html = this.renderTemplate('subtab-nodata', {});
-		this.$('.data_div').html(html);
-	},
-
-	showOpenActivities: function(data) {
-		this.showSpinner(false);
-
-		if (typeof(data) == "undefined" || typeof(data.data) == "undefined") {
-			var html = this.renderTemplate('subtab-nodata', {});
-			this.$('.data_div').html(html);
-		}
-		else {
-			var activitiesJson = [];
-			var current_obj = this;
-			_.each(data.data, function(activity) {
-				var activity_id = activity.id;
-				var activity_type = activity.Activity_Type;
-				var activity_owner = activity.Activity_Owner.name;
-				var subject = activity.Subject;
-				var is_event = false;
-				var is_task = false;
-				var is_call = false;
-
-				var orig_activity_owner = activity_owner;
-				if (activity_owner.length > 20) {
-					activity_owner = activity_owner.substring(0, 20) + "...";
-				}
-				var orig_subject = subject;
-				if (subject.length > 30) {
-					subject = subject.substring(0, 30) + "...";
-				}
-
-				var activityInfo = {};
-				activityInfo['type'] = activity_type;
-				activityInfo['owner'] = activity_owner;
-				activityInfo['orig_owner'] = orig_activity_owner;
-				activityInfo['subject'] = subject;
-				activityInfo['orig_subject'] = orig_subject;
-				activityInfo['link'] = helpers.fmt('%@/crm/EntityInfo.do?module=%@&id=%@', current_obj.resources.ZOHOCRM_URL, activity_type, activity_id);
-
-				if (activity_type == 'Events') {
-					is_event = true;
-
-					var date_str = '';
-					var time_str = '';
-					var venue = '';
-
-					var start_datetime = activity.Start_DateTime;
-					var date_obj = new Date(Date.parse(start_datetime));
-					date_str = current_obj.formatDate(date_obj, 'dd/MM/yyyy');
-					time_str = current_obj.formatDate(date_obj, 'HH:mm t');
-
-					if (typeof(activity.Venue) != 'undefined' && activity.Venue != 'null') {
-						venue = activity.Venue;
-					}
-
-					activityInfo['date'] = date_str;
-					activityInfo['time'] = time_str;
-					activityInfo['venue'] = venue;
-				}
-				else if (activity_type == 'Tasks') {
-					is_task = true;
-
-					var activity_status = activity.Status;
-					var priority = activity.Priority;
-					var due_date = activity.Due_Date;
-					if (due_date !== 'null' && due_date !== '') {
-						var due_date_obj = new Date(Date.parse(due_date));
-						due_date = current_obj.formatDate(due_date_obj, 'dd/MM/yyyy');
-					}
-					else {
-						due_date = '';
-					}
-
-					activityInfo['status'] = activity_status;
-					activityInfo['priority'] = priority;
-					activityInfo['due_date'] = due_date;
-				}
-				else if (activity_type == 'Calls') {
-					is_call = true;
-
-					activityInfo['date'] = '';
-					activityInfo['time'] = '';
-					activityInfo['call_type'] = '';
-				}
-				activityInfo.is_event = is_event;
-				activityInfo.is_task = is_task;
-				activityInfo.is_call = is_call;
-
-				activitiesJson.push(activityInfo);
-			});
-
-			var activitiesData = {};
-			activitiesData.open_activities = activitiesJson;
-
-			var activitiesHtml = this.renderTemplate('open_activities', {'data': activitiesData});
-			this.$('.data_div').html(activitiesHtml);
+		if (this.$('.activity_type').length > 0 && activityType !== '') {
+			this.$('.activity_type').val(activityType);
 		}
 	},
 
@@ -657,7 +681,7 @@
 			this.showSpinner(false);
 		}
 		else if (tab_name == 'open_activities') {
-			this.fetchZCRMActivities(this.crm_data.module);
+			this.fetchZCRMRelatedRecords(this.crm_data.module, this.crm_data.rec_id, 'Calls');
 		}
 		else {			
       		this.fetchZCRMRelatedRecords(this.crm_data.module, this.crm_data.rec_id, module_name);
@@ -678,14 +702,6 @@
 
     fetchZCRMRelatedRecords: function(module, recId, relatedModule) {
     	this.ajax('get_related_records', module, recId, relatedModule);
-    },
-
-    fetchZCRMActivities: function(module) {
-    	this.ajax('get_activities', module);
-    },
-
-    fetchZCRMOpenActivities: function(href, entity_id) {
-    	this.ajax('get_open_activities', href, entity_id);
     },
 
     requests: {
@@ -716,23 +732,6 @@
 		get_related_records: function(module, recId, relatedModule) {
 			return {
 				url: helpers.fmt('%@/crm/private/json/%@/getRelatedRecords?authtoken={{setting.authtoken}}&scope=crmapi&id=%@&parentModule=%@', this.resources.ZOHOCRM_URL, relatedModule, recId, module),
-				type: 'GET',
-				dataType: 'json',
-				secure: true
-			};
-		},
-		get_activities: function(module_name) {
-			return {
-				url: helpers.fmt('%@/crm/v2/settings/modules/%@?authtoken={{setting.authtoken}}&scope=crmapi', this.resources.ZOHOCRM_URL, module_name),
-				type: 'GET',
-				dataType: 'json',
-				secure: true
-			};
-		},
-		get_open_activities: function(href, entity_id) {
-			href = href.replace("{ENTITYID}", entity_id);
-			return {
-				url: helpers.fmt('%@/crm/v2/%@?authtoken={{setting.authtoken}}&scope=crmapi', this.resources.ZOHOCRM_URL, href),
 				type: 'GET',
 				dataType: 'json',
 				secure: true

@@ -1,3 +1,7 @@
+<div class="act-type">
+    <label for="activity_type">{{t 'zohocrm_app.activity_filter_by'}}</label>
+    <select id="activity_type" class="activity_type"><option value="Calls">{{t 'zohocrm_app.calls'}}</option><option value="Events">{{t 'zohocrm_app.events'}}</option><option value="Tasks">{{t 'zohocrm_app.tasks'}}</option></select>
+</div>
 {{#data.open_activities}}
   {{#if is_event}}
     <div class="activity-entry">

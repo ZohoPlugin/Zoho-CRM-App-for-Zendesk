@@ -1,9 +1,10 @@
 {
   "app": {
-    "description": "Contextual customer information right inside every Zendesk ticket of Zoho CRM",
+    "description": "Help your customer support agents to view Zoho CRM data inside every ticket",
     "name": "Zoho CRM",
     "parameters": {
-      "authtoken" : { "label": "Auth Token", "helpText": "To know how to get an Auth Token, please visit: https://www.zoho.com/crm/help/zoho-crm-for-zendesk.html"}
+      "authtoken" : { "label": "Auth Token", "helpText": "To know how to get an Auth Token, please visit: https://www.zoho.com/crm/help/zoho-crm-for-zendesk.html"},
+      "zohoeu": { "label": "Are you using Zoho CRM EU?", "helpText": "Enable this checkbox if you are using the Europe datacenter of Zoho (crm.zoho.eu)."}
      }
   },
   "zohocrm_app": {
@@ -19,6 +20,9 @@
     "notes": "Notes",
     "potentials": "Potentials",
     "products": "Products",
+    "calls": "Calls",
+    "events": "Events",
+    "tasks": "Tasks",
     "open_activities": "Activities",
     "owner": "Owner",
     "industry": "Industry",
@@ -31,10 +35,11 @@
     "phone": "Phone",
     "mobile": "Mobile",
     "amount": "Amount",
-    "unable_to_fetch_data": "Unable to fetch data from Zoho CRM.",
+    "unable_to_fetch_data": "Unable to fetch data from Zoho CRM. Please check whether you have entered the valid Authtoken of Zoho CRM or please contact us @ support@zohoextensions.com.",
     "no_records_matched": "No matching records found in Zoho CRM for this requestor email.",
     "no_account_records_matched": "No matching records found in Zoho CRM for this organization.",
     "no_data_found": "No data found.",
-    "not_specified": "Not specified"
+    "not_specified": "Not specified",
+    "activity_filter_by": "Filter by:"
   }
 }

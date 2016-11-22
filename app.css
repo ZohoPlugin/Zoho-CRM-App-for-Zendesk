@@ -241,3 +241,11 @@ ul {
 .popupview-model .back_to_contact {
     display: none !important;
 }
+
+.act-type {
+    padding: 5px 5px 8px 5px; border-bottom: 1px dashed #efefef; margin-bottom:8px;
+}
+
+.act-type label {
+    float: left; line-height: 26px; padding-right: 6px;
+}
