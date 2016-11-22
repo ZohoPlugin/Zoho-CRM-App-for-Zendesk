@@ -10,7 +10,7 @@
   "location":  ["ticket_sidebar", "user_sidebar", "organization_sidebar"],
   "version": "1.0.1",
   "frameworkVersion": "1.0",
-  "domainWhitelist": ["crm.zoho.com"],
+  "domainWhitelist": ["crm.zoho.com","crm.zoho.eu"],
   "parameters": [
     {
       "name": "authtoken",
