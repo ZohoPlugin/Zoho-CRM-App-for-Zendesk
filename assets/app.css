@@ -219,7 +219,6 @@ ul {
 
 .openin_newtab {
     float: right;
-    background: transparent app-asset-url("opennewtab-icon.png") no-repeat;
     width: 25px;
     height: 25px;
     margin-top: -5px;
@@ -248,4 +247,11 @@ ul {
 
 .act-type label {
     float: left; line-height: 26px; padding-right: 6px;
+}
+
+.activity_type {
+    border: 1px solid #d3d3d3;
+    background-color: #fff;
+    height: 28px;
+    width: 220px;
 }

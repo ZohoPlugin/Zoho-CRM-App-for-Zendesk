@@ -1,6 +1,0 @@
-{{#crm_fields}}
-	<div class="zcrm-field">
-		<label>{{key}}</label>
-        <div class="field-value">{{val}}</div>
-    </div>
-{{/crm_fields}}

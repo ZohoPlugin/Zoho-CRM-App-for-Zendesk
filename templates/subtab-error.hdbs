@@ -1,3 +1,0 @@
-<div class="error_container">
-  {{t 'zohocrm_app.unable_to_fetch_data'}}
-</div>

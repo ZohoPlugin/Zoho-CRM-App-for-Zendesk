@@ -1,5 +1,5 @@
 {
-  "name": "Zoho CRM",
+  "name": "Zoho CRM V2",
   "author": {
     "name": "Zoho",
     "email": "support@zohoextensions.com",
@@ -7,10 +7,19 @@
   },
   "defaultLocale": "en",
   "private": false,
-  "location":  ["ticket_sidebar", "user_sidebar", "organization_sidebar"],
+  "location": {
+    "support": {
+      "ticket_sidebar": "assets/iframe.html",
+      "user_sidebar": "assets/iframe.html",
+      "organization_sidebar": "assets/iframe.html"
+    }
+  },
   "version": "1.0.1",
-  "frameworkVersion": "1.0",
-  "domainWhitelist": ["crm.zoho.com","crm.zoho.eu"],
+  "frameworkVersion": "2.0",
+  "domainWhitelist": [
+    "crm.zoho.com",
+    "crm.zoho.eu"
+  ],
   "parameters": [
     {
       "name": "authtoken",
