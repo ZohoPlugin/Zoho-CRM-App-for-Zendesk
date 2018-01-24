@@ -1,3 +1,0 @@
-<div class="error_container">
-  {{t 'zohocrm_app.no_account_records_matched'}}
-</div>

@@ -1,0 +1,434 @@
+<html>
+<head>
+  <meta charset="utf-8">
+  <!-- http://garden.zendesk.com -->
+  <link rel="stylesheet" href="https://assets.zendesk.com/apps/sdk-assets/css/2/zendesk_garden.css" type="text/css">
+  <link rel="stylesheet" href="app.css" type="text/css">
+  <!-- https://github.com/zendesk/zendesk_app_framework_sdk -->
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/lodash.js/0.10.0/lodash.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/g/jquery@2.2.4,handlebarsjs@4.0.5,bootstrap@3.3.6"></script>
+  <script type="text/javascript" src="https://assets.zendesk.com/apps/sdk/2.0/zaf_sdk.js"></script>
+
+  <script type="text/javascript" src="app.js"></script>
+  <script>
+        // Initialise the Zendesk JavaScript API client
+        // https://developer.zendesk.com/apps/docs/apps-v2
+	var client = ZAFClient.init();
+	$(document).ready(function(){
+		client.invoke('resize', { height: '40px' });
+		switchTo('loading_screen');
+		client.invoke('resize', { height: '80vh' });
+		client.on('app.registered', App.activateApp);
+                if(!$('.modal-backdrop').is(':visible')){
+			var nophoto = "";
+			getKey(client, "modal-content").then(function(data) {
+				var modalData = JSON.parse(data);
+				if (modalData.module === 'Contacts') {
+					client.get('assetURL:contact-nophoto\\.png').then(function(data) {
+						nophoto = data['assetURL:contact-nophoto\\.png'];
+						var content1 = switchTo('contact_info', {
+									'contact': modalData,
+                                        				'zohocrm_app': App.zohocrm_app,
+                                        				'nophoto': nophoto
+								});
+				        	$('.modal-body').html(content1);
+					});
+				}
+	               		else if (modalData.module === 'Accounts') {
+                                        client.get('assetURL:account-logo\\.png').then(function(data) {
+                                                nophoto = data['assetURL:account-logo\\.png'];
+                                                var content2 = switchTo('account_info', {
+                                                                        'account': modalData,
+                                                                        'zohocrm_app': App.zohocrm_app,
+                                                                        'nophoto': nophoto
+                                                                });
+                                                $('.modal-body').html(content2);
+                                        });
+				}
+				else {
+					 client.get('assetURL:contact-nophoto\\.png').then(function(data) {
+                                                nophoto = data['assetURL:contact-nophoto\\.png'];
+                                                var content3 = switchTo('lead_info', {
+                                                                        'lead': modalData,
+                                                                        'zohocrm_app': App.zohocrm_app,
+                                                                        'nophoto': nophoto
+                                                                });
+                                                $('.modal-body').html(content3);
+                                        });
+				}
+			});
+        		App.switchSubTab('crm_fields');
+		}else{
+			$('.modal-body').html('');
+		}
+	});	
+ 	$(document).on("click", ".open-model" , function(e) {
+ 		e.preventDefault();
+		getKey(client, "display-model").then(function(data) {
+		if((data===null)||(data==="show")){
+			openModal(client);
+		}
+		});
+	});
+        $(document).on("click", ".crm_fields" , function() {
+        	App.switchSubTab('crm_fields');
+        });
+        $(document).on("click", ".notes" , function() {
+		App.switchSubTab('notes', 'Notes');
+	});
+        $(document).on("click", ".potentials" , function() {
+                App.switchSubTab('potentials', 'Potentials');
+        });
+        $(document).on("click", ".open_activities" , function() {
+                App.switchSubTab('open_activities', 'Activities');
+        });
+        $(document).on("click", ".open-account" , function() {
+		client.invoke('resize', { height: '40px' });
+		switchTo('loading_screen');
+		client.invoke('resize', { height: '80vh' });
+		getKey(client, "modal-content").then(function(data) {
+			var modalData = JSON.parse(data);
+			App.fetchZCRMAccountInfo(modalData.account_name.name);
+		});
+        });
+        $(document).on("click", ".back_to_contact" , function() {
+		client.invoke('resize', { height: '40px' });
+		switchTo('loading_screen');
+		client.invoke('resize', { height: '80vh' });
+		getKey(client, "modal-content").then(function(mdata) {
+			var modalData = JSON.parse(mdata);
+			getKey(client, "prev-email").then(function(data) {
+				if (modalData.module === 'Accounts') {
+					App.fetchZCRMContactInfo(data);
+				}
+			});
+		});
+      	});
+	$(document).on("change", ".activity_type" , function() {
+		var sel_type = $('.activity_type').val();
+		if(App.crm_data!=undefined){
+			App.fetchZCRMRelatedRecords(App.crm_data.module, App.crm_data.rec_id, sel_type);
+		}else{
+			getKey(client, "modal-content").then(function(data) {				
+                                var modalData = JSON.parse(data);
+				App.fetchZCRMRelatedRecords(modalData.module, modalData.rec_id, sel_type);
+			});
+		}
+        });
+  </script>
+</head>
+<body>
+<script id="error_screen" type="text/x-handlebars-template">
+<div class="error_container">
+{{msg}}
+</div>
+</script>
+<script id="org_nodata_screen" type="text/x-handlebars-template">
+<div class="error_container">
+  {{zohocrm_app.no_account_records_matched}}
+</div>
+</script>
+<script id="account_info" type="text/x-handlebars-template">
+<div class="clear maindiv">
+    {{#if account.show_backtocontact_link}}
+      <div class="pB10"><a class="back_to_contact clrblue">&#171; {{zohocrm_app.back_to_contact}}</a></div>
+    {{/if}}
+    <div>
+        <div class="profile_img_div">
+            <img class="profile_img" src="{{nophoto}}" width="60" height="60" alt="user">
+        </div>
+        <div class="profile_info">
+            <div>
+                <div>
+                    <div class="zclin15">
+                    <a class="open-model bold">{{account.account_name.name}}</a>
+                    {{#if account.has_website}}
+                      &nbsp;-&nbsp;<span class="zclin15"><a href="#" target="_blank">{{account.website}}</a></span>
+                    {{/if}}
+                    <a class="openin_newtab" style="background-image: url('opennewtab-icon.png');" title="{{zohocrm_app.open_in_zohocrm}}" href="{{account.account_name.link}}" target="_blank"></a>
+                    </div>
+                    <div class="zclin15">
+                        {{#if account.has_industry}}
+                          <span class="clr8">{{zohocrm_app.industry}}:</span>&nbsp;
+                          {{account.industry}}
+                        {{else}}
+                          <span class="clr8">{{zohocrm_app.industry}}:</span>&nbsp;
+                          {{zohocrm_app.not_specified}}
+                        {{/if}}
+                    </div>
+                    <div class="zclin15">
+                        <span class="clr8">{{zohocrm_app.status}}:</span>&nbsp;
+                        {{zohocrm_app.account}}
+                    </div>
+                    <div class="zclin15">
+                        {{#if account.has_phone}}
+                          <span class="clr8">{{zohocrm_app.phone}}:</span>&nbsp;
+                          {{account.phone}}
+                        {{else}}
+                          <span class="clr8">{{zohocrm_app.phone}}:</span>&nbsp;
+                          {{zohocrm_app.not_specified}}
+                        {{/if}}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="pT15">
+            <ul class="tabs-menu">
+                <li class="current crm_fields">{{zohocrm_app.details}}</li>
+                <li class="notes">{{zohocrm_app.notes}}</li>
+                <li class="potentials">{{zohocrm_app.potentials}}</li>
+                <li class="open_activities">{{zohocrm_app.open_activities}}</li>
+            </ul>
+        </div>
+        <div class="data_div" class="clr8 zcctchts pT10">
+        </div>
+    </div>
+</div>
+</script>
+<script id="lead_info" type="text/x-handlebars-template">
+<div class="clear maindiv">
+    <div>
+        <div class="profile_img_div">
+            <img class="profile_img" src="{{nophoto}}" width="60" height="60" alt="user">
+        </div>
+        <div class="profile_info">
+            <div>
+                <div>
+                    <div class="zclin15">
+                    <a class="open-model bold">{{lead.lead_name.name}}</a>&nbsp;-&nbsp;<span class="zclin15">{{lead.company}}</span><a class="openin_newtab" style="background-image: url('opennewtab-icon.png');" title="{{zohocrm_app.open_in_zohocrm}}" href="{{lead.lead_name.link}}" target="_blank"></a>
+                    </div>
+                    <div class="zclin15"><a href="{{lead.lead_name.zdesk_userprofile_link}}" target="_blank">{{lead.email}}</a></div>
+                    <div class="zclin15">
+                        <span class="clr8">{{zohocrm_app.status}}:</span>&nbsp;
+                        {{zohocrm_app.lead}}
+                    </div>
+                    <div class="zclin15">
+                        {{#if lead.has_mobile}}
+                            <span class="clr8">{{zohocrm_app.mobile}}:</span>&nbsp;
+                            {{lead.mobile}}
+                        {{else}}
+                            {{#if lead.has_phone}}
+                                <span class="clr8">{{zohocrm_app.phone}}:</span>&nbsp;
+                                {{lead.phone}}
+                            {{else}}
+                                <span class="clr8">{{zohocrm_app.mobile}}:</span>&nbsp;
+                                {{zohocrm_app.not_specified}}
+                            {{/if}}
+                        {{/if}}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="pT15">
+            <ul class="tabs-menu">
+                <li class="current crm_fields">{{zohocrm_app.details}}</li>
+                <li class="notes">{{zohocrm_app.notes}}</li>
+                <li class="open_activities">{{zohocrm_app.open_activities}}</li>
+            </ul>
+        </div>
+        <div class="data_div" class="clr8 zcctchts pT10">
+        </div>
+    </div>
+</div>
+</script>
+<script id="nodata_screen" type="text/x-handlebars-template">
+<div class="error_container">
+  {{zohocrm_app.no_records_matched}}
+</div>
+</script>
+<script id="notes" type="text/x-handlebars-template">
+{{#data.notes}}
+        <div class="note-comment">
+                <div class="content">
+                        <a class="author">{{added_by}}</a>
+                <div class="metadata">
+                                <span class="date">{{added_on}}</span>
+                </div>
+                {{#if title}}
+                        <div class="title">
+                                {{title}}
+                        </div>
+                {{/if}}
+                <div class="text">
+                    {{comment}}
+                </div>
+            </div>
+        </div>
+{{/data.notes}}
+</script>
+<script id="open_activities" type="text/x-handlebars-template">
+<div class="act-type">
+    <label for="activity_type">{{zohocrm_app.activity_filter_by}}</label>
+    <select id="activity_type" class="activity_type"><option value="Calls">{{zohocrm_app.calls}}</option><option value="Events">{{zohocrm_app.events}}</option><option value="Tasks">{{zohocrm_app.tasks}}</option></select>
+</div>
+{{#data.open_activities}}
+  {{#if is_event}}
+    <div class="activity-entry">
+      <div class="aty_row">
+        <span class="light_label">Activity Type: <span class="clr3">{{type}}</span></span>
+        <span class="light_label flright">Owner : <span class="clr3" title="{{orig_owner}}">{{owner}}</span></span>
+      </div>
+      <div class="aty_row">
+        <span><a href="{{link}}" class="activity-name" target="_blank" title="{{orig_subject}}">{{subject}}</a></span>
+        <span class="flright">{{date}}</span></span>
+      </div>
+      <div class="aty_row">
+        <span>{{venue}}</span></span>
+        <span class="flright">{{time}}</span></span>
+      </div>
+    </div>
+  {{/if}}
+  {{#if is_task}}
+    <div class="activity-entry">
+      <div class="aty_row">
+        <span class="light_label">Activity Type: <span class="clr3">{{type}}</span></span>
+        <span class="light_label flright">Owner : <span class="clr3" title="{{orig_owner}}">{{owner}}</span></span>
+      </div>
+      <div class="aty_row">
+        <span><a href="{{link}}" class="activity-name" target="_blank" title="{{orig_subject}}">{{subject}}</a></span>
+        <span class="flright">{{due_date}}</span></span>
+      </div>
+      <div class="aty_row">
+        <span>{{status}}</span></span>
+        <span class="flright">{{priority}}</span></span>
+      </div>
+    </div>
+  {{/if}}
+  {{#if is_call}}
+    <div class="activity-entry">
+      <div class="aty_row">
+        <span class="light_label">Activity Type: <span class="clr3">{{type}}</span></span>
+        <span class="light_label flright">Owner : <span class="clr3" title="{{orig_owner}}">{{owner}}</span></span>
+      </div>
+      <div class="aty_row">
+        <span><a href="{{link}}" class="activity-name" target="_blank" title="{{orig_subject}}">{{subject}}</a></span>
+        <span class="flright">{{date}}</span></span>
+      </div>
+      <div class="aty_row">
+        <span>{{call_type}}</span></span>
+        <span class="flright">{{time}}</span></span>
+      </div>
+    </div>
+  {{/if}}
+{{/data.open_activities}}
+</script>
+<script id="products" type="text/x-handlebars-template">
+{{#data.products}}
+        <div class="potential">
+                <div class="potential-info">
+                <span>
+                        <span><a href="{{link}}" target="_blank" class="potential-name">{{name}}</a></span>
+                        <span class="flright">{{product_code}}</span>
+                </span>
+                </div>
+                <div class="clearfix"></div>
+                <div class="potential-info">
+                        <spa>
+                                <span>{{category}}</span>
+                                <span class="flright">{{status}}</span>
+                        </span>
+                </div>
+                <div class="clearfix"></div>
+        </div>
+{{/data.products}}
+</script>
+<script id="subtab-error" type="text/x-handlebars-template">
+<div class="error_container">
+  {{zohocrm_app.unable_to_fetch_data}}
+</div>
+</script>
+<script id="subtab-nodata" type="text/x-handlebars-template">
+{{#if data.is_activities}}
+        <div class="act-type">
+          <label for="activity_type">{{zohocrm_app.activity_filter_by}}</label>
+          <select id="activity_type" class="activity_type"><option value="Calls">{{zohocrm_app.calls}}</option><option value="Events">{{zohocrm_app.events}}</option><option value="Tasks">{{zohocrm_app.tasks}}</option></select>
+        </div>
+{{/if}}
+<div class="error_container">{{zohocrm_app.no_data_found}}</div>
+</script>
+<script id="contact_info" type="text/x-handlebars-template">
+<div class="clear maindiv">
+    <div>
+        <div class="profile_img_div">
+            <img class="profile_img" src="{{nophoto}}" width="60" height="60" alt="user">
+        </div>
+        <div class="profile_info">
+            <div>
+                <div>
+                    <div class="zclin15">
+                    <a class="open-model bold">{{contact.contact_name.name}}</a>&nbsp;-&nbsp;<a class="open-account">{{contact.account_name.name}}</a><a class="openin_newtab" style="background-image: url('opennewtab-icon.png');" title="{{zohocrm_app.open_in_zohocrm}}" href="{{contact.contact_name.link}}" target="_blank"></a>
+                    </div>
+                    <div class="zclin15"><a href="{{contact.contact_name.zdesk_userprofile_link}}" target="_blank">{{contact.email}}</a></div>
+                    <div class="zclin15">
+                        <span class="clr8">{{zohocrm_app.status}}:</span>&nbsp;
+                        {{zohocrm_app.contact}}
+                    </div>
+                    <div class="zclin15">
+                        {{#if contact.has_mobile}}
+                            <span class="clr8">{{zohocrm_app.mobile}}:</span>&nbsp;
+                            {{contact.mobile}}
+                        {{else}}
+                            {{#if contact.has_phone}}
+                                <span class="clr8">{{zohocrm_app.phone}}:</span>&nbsp;
+                                {{contact.phone}}
+                            {{else}}
+                                <span class="clr8">{{zohocrm_app.mobile}}:</span>&nbsp;
+                                {{zohocrm_app.not_specified}}
+                            {{/if}}
+                        {{/if}}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="pT15">
+            <ul class="tabs-menu">
+                <li class="current crm_fields">{{zohocrm_app.details}}</li>
+                <li class="notes">{{zohocrm_app.notes}}</li>
+                <li class="potentials">{{zohocrm_app.potentials}}</li>
+                <li class="open_activities">{{zohocrm_app.open_activities}}</li>
+            </ul>
+        </div>
+        <div class="data_div" class="clr8 zcctchts pT10">
+        </div>
+    </div>
+</div>
+</script>
+<script id="potentials" type="text/x-handlebars-template">
+{{#data.potentials}}
+        <div class="potential">
+                <div class="potential-info">
+                <span>
+                        <span><a href="{{link}}" target="_blank" class="potential-name">{{name}}</a></span>
+                        <span class="flright">Amount ({{amount}})</span>
+                </span>
+                </div>
+                <div class="clearfix"></div>
+                <div class="potential-info">
+                        <spa>
+                                <span>{{owner}}</span>
+                                <span class="flright mL5">({{probability}}%)</span>
+                                <span class="flright">{{stage}}</span>
+                        </span>
+                </div>
+                <div class="clearfix"></div>
+        </div>
+{{/data.potentials}}
+</script>
+<script id="crm_fields" type="text/x-handlebars-template">
+{{#crm_fields}}
+        <div class="zcrm-field">
+                <label>{{key}}</label>
+        <div class="field-value">{{val}}</div>
+    </div>
+{{/crm_fields}}
+</script>
+<script id="loading_screen" type="text/x-handlebars-template">
+<div class="spinner"><center><img src="spinner.gif" /></center></div>
+</script>
+<div id="maincontent">
+<div id="content"></div>
+<div id="sub-content"></div>
+</div>
+</body>
+</html>

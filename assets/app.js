@@ -1,129 +1,162 @@
-(function() {
+var App = {
+	resources: {
+		ZOHOCRM_URL: 'https://crm.zoho.com',
+		ZOHOCRM_URL_EU: 'https://crm.zoho.eu'
+	},
+	zohocrm_app: {
 
-  return {
-
-  	defaultState: 'loading_screen',
-
-  	resources: {
-  		ZOHOCRM_URL: 'https://crm.zoho.com',
-  		ZOHOCRM_URL_EU: 'https://crm.zoho.eu'
-  	},
-
-    events: {
-      'app.activated': 'activateApp',
-      'app.willDestroy': 'destroyApp',
-      'get_zcrm_contact_info.done': 'showContactInfo',
-      'get_zcrm_contact_info.fail': 'handleFailure',
-      'get_zcrm_lead_info.done': 'showLeadInfo',
-      'get_zcrm_lead_info.fail': 'handleFailure',
-      'get_zcrm_account_info.done': 'showAccountInfo',
-      'get_zcrm_account_info.fail': 'handleFailure',
-      'get_related_records.done': 'showRelatedRecords',
-      'get_related_records.fail': 'handleSubTabFailure',
-      'click .open-model': function() {
-      	if (!this.$('#popupview-model').is(':visible')) {
-      		// show popup if its not already open
-      		this.$('#popupview-model').modal({'keyboard': true});
-      	}
-      },
-      'show .popupview-model': function() {
-      	if (this.crm_data.module === 'Contacts') {
-      		var content1 = this.renderTemplate('contact_info', {'contact': this.crm_data});
-      		this.$('.modal-body').html(content1);
-      	}
-      	else if (this.crm_data.module === 'Accounts') {
-      		var content2 = this.renderTemplate('account_info', {'account': this.crm_data});
-      		this.$('.modal-body').html(content2);
-      	}
-      	else {
-      		var content3 = this.renderTemplate('lead_info', {'lead': this.crm_data});
-      		this.$('.modal-body').html(content3);
-      	}
-
-      	// by default show details tab
-      	this.switchSubTab('crm_fields');
-      },
-      'hide .popupview-model': function() {
-      	this.$('.modal-body').html('');
-      },
-      'click .crm_fields': function() {
-      	this.switchSubTab('crm_fields');
-      },
-      'click .notes': function() {
-      	this.switchSubTab('notes', 'Notes');
-      },
-      'click .potentials': function() {
-      	this.switchSubTab('potentials', 'Potentials');
-      },
-      'click .open_activities': function() {
-      	this.switchSubTab('open_activities', 'Activities');
-      },
-      'click .open-account': function() {
-      	if (!this.$('#popupview-model').is(':visible')) {
-      		this.switchTo('loading_screen');
-      		this.fetchZCRMAccountInfo(this.crm_data.account_name.name);
-      	}
-      },
-      'click .back_to_contact': function() {
-      	this.switchTo('loading_screen');
-      	this.fetchZCRMContactInfo(this.email_id);
-      },
-      'change .activity_type': function() {
-      	if (this.$('#popupview-model').is(':visible')) {
-      		this.$('.activity_type').val(this.$('#popupview-model .activity_type').val());
-      	}
-      	var sel_type = this.$('.activity_type').val();
-      	this.fetchZCRMRelatedRecords(this.crm_data.module, this.crm_data.rec_id, sel_type);
-      }
-    },
-
-    activateApp: function() {
-    
-	if (this.setting('zohoeu')) {
-		this.resources.ZOHOCRM_URL = this.resources.ZOHOCRM_URL_EU;
-	}
-	
-    	this.$('.zcrm-header').attr('href', this.resources.ZOHOCRM_URL);
-
-    	var current_location = this.currentLocation();
-
-		// to maintain zoho crm contact/lead data
-		this.crm_data = {};
-		this.current_location = current_location;
-
-    	if (current_location == 'user_sidebar') {
-    		this.email_id = this.user().email();
-
-    		this.fetchZCRMContactInfo(this.email_id);
-    	}
-    	else if (current_location == 'organization_sidebar') {
-    		this.account_name = this.organization().name();
-
-    		this.fetchZCRMAccountInfo(this.account_name);
-    	}
-    	else if (current_location == 'ticket_sidebar') {
-    		var ticket = this.ticket();
-			var requester = ticket.requester();
-			this.email_id = requester.email();
-
-			this.fetchZCRMContactInfo(this.email_id);
-    	}
+                        contact_information: "Zoho CRM Contact Information",
+                        account_information: "Zoho CRM Account Informaion",
+                        lead_information: "Zoho CRM Lead Information",
+                        close: "Close",
+                        status: "Status",
+                        contact: "Contact",
+                        lead: "Lead",
+                        account: "Account",
+                        details: "Details",
+                        notes: "Notes",
+                        potentials: "Potentials",
+                        products: "Products",
+                        calls: "Calls",
+                        events: "Events",
+                        tasks: "Tasks",
+                        open_activities: "Activities",
+                        owner: "Owner",
+                        industry: "Industry",
+                        activity_type: "Activity Type",
+                        location: "Location",
+                        back_to_contact: "Back to Contact",
+                        start_time: "Start",
+                        end_time: "End",
+                        open_in_zohocrm: "Open in Zoho CRM",
+                        phone: "Phone",
+                        mobile: "Mobile",
+                        amount: "Amount",
+                        unable_to_fetch_data: "Unable to fetch data from Zoho CRM. Please check whether you have entered the valid Authtoken of Zoho CRM or please contact us @ support@zohoextensions.com.",
+                        no_records_matched: "No matching records found in Zoho CRM for this requestor email.",
+                        no_account_records_matched: "No matching records found in Zoho CRM for this organization.",
+                        no_data_found: "No data found.",
+                        not_specified: "Not specified",
+                        activity_filter_by: "Filter by"
+	},
+	activateApp(){
+		var self = this;
+		client.context().then(function(context){
+			client.metadata().then(function(metadata){
+				if (metadata.settings.zohoeu){
+					App.resources.ZOHOCRM_URL = App.resources.ZOHOCRM_URL_EU;
+				}
+			
+				App.resources.ZOHOCRM_URL = App.resources.ZOHOCRM_URL;
+		
+				var current_location = context.location;
+				if(current_location!='modal'){
+                        		setKey(client, 'modal-content', '');
+                		}
+				// to maintain zoho crm contact/lead data
+				self.crm_data = {};
+				self.current_location = current_location;
+				if (current_location == 'user_sidebar') {
+					return client.get('user.email').then(function(data) {
+               		                        self.email_id = data['user.email'];
+			                        setKey(client, 'prev-email', self.email_id);
+               		                        App.fetchZCRMContactInfo(self.email_id);
+               		                });
+				}
+				else if (current_location == 'organization_sidebar') {
+					 return client.get('organization.name').then(function(data) {
+                	                        self.accountname = data['organization.name'];
+                	                        App.fetchZCRMAccountInfo(self.accountname);
+                	                });
+				}
+				else if (current_location == 'ticket_sidebar') {
+					 return client.get('ticket.requester.email').then(function(data) {
+						self.email_id = data['ticket.requester.email'];
+			                        setKey(client, 'prev-email', self.email_id);
+						App.fetchZCRMContactInfo(self.email_id);
+			                });
+				}
+			});
+		});
+	},
+	fetchZCRMContactInfo (email_id) {
+                var fetchSelf = {
+                        url: App.resources.ZOHOCRM_URL+'/crm/private/json/Contacts/getSearchRecordsByPDC?authtoken={{setting.authtoken}}&scope=crmapi&selectColumns=All&searchColumn=email&searchValue='+email_id,
+                        type: 'GET',
+                        dataType: 'json',
+			secure: true
+		};
+		return client.request(fetchSelf).then(
+                function(data) {
+                        this.App.showContactInfo(email_id, data);
+                },
+                function(error) {
+                        this.App.handleFailure(error);
+		});
+        },
+	fetchZCRMLeadInfo (email_id) {
+                var fetchSelf = {
+                        url: App.resources.ZOHOCRM_URL+'/crm/private/json/Leads/getSearchRecordsByPDC?authtoken={{setting.authtoken}}&scope=crmapi&selectColumns=All&searchColumn=email&searchValue='+email_id,
+                        type: 'GET',
+                        dataType: 'json',
+			secure: true
+                };
+                return client.request(fetchSelf).then(
+                function(data) {
+                        this.App.showLeadInfo(data);
+                },
+                function(error) {
+                        this.App.handleFailure(error);
+		});
 	},
 
-	destroyApp: function() {
+	fetchZCRMAccountInfo (account_name) {
+                var fetchSelf = {
+                        url: App.resources.ZOHOCRM_URL+'/crm/private/json/Accounts/getSearchRecordsByPDC?authtoken={{setting.authtoken}}&scope=crmapi&selectColumns=All&searchColumn=accountname&searchValue='+account_name,
+                        type: 'GET',
+                        dataType: 'json',
+			secure: true
+                };
+                return client.request(fetchSelf).then(
+                function(data) {
+			this.App.showAccountInfo(this,data);
+                },
+                function(error) {
+			this.App.handleFailure(error);
+                });
+	},
+
+	fetchZCRMRelatedRecords (module, recId, relatedModule) {
+                var fetchSelf = {
+                        url: App.resources.ZOHOCRM_URL+'/crm/private/json/'+relatedModule+'/getRelatedRecords?authtoken={{setting.authtoken}}&scope=crmapi&id='+recId+'&parentModule='+module,
+                        type: 'GET',
+                        dataType: 'json',
+                        secure: true
+                };
+                return client.request(fetchSelf).then(
+                function(data) {
+                        this.App.showRelatedRecords(data);
+                },
+                function(error) {
+                        this.App.handleFailure(error);
+                });
+        },
+
+	handleFailure(response) {
+		setKey(client, 'modal-content', '');
+        	switchTo('error_screen');
+		client.invoke('resize', { height: '40px' });
+        },
+
+	destroyApp() {
 		// reseting the zoho crm contact/lead data obj
 		this.crm_data = {};
 	},
 
-	handleFailure: function() {
-		this.switchTo('error_screen');
-	},
-
-	showContactInfo: function(data) {
-
+	showContactInfo: function(email_id, data) {
 		if (typeof(data.response.nodata) != 'undefined') {
 			// No records matching in Contacts module, so going to find the same in Leads module.
-			this.fetchZCRMLeadInfo(this.email_id);
+			this.fetchZCRMLeadInfo(email_id);
 		}
 		else if (typeof(data.response.error) != 'undefined') {
 			this.handleFailure();
@@ -136,27 +169,26 @@
 			else {
 				crm_fields = data.response.result.Contacts.row.FL;
 			}
-
 			var crm_fields_json = {};
-			_.each(crm_fields, function(crm_field) {
-				crm_fields_json[crm_field.val] = crm_field.content;
-			});
+
+                        _.each(crm_fields, function(crm_field) {
+                                crm_fields_json[crm_field.val] = crm_field.content;
+                        });
 
 			var contact_name = {};
 			contact_name.name = _.result(crm_fields_json, 'First Name', '') + ' ' + crm_fields_json['Last Name'];
-			contact_name.link = helpers.fmt('%@/crm/EntityInfo.do?module=Contacts&id=%@', this.resources.ZOHOCRM_URL, crm_fields_json['CONTACTID']);
-			contact_name.zdesk_userprofile_link = helpers.fmt('mailto:%@', this.email_id);
-			//contact_name.photo = helpers.fmt('%@/crm/private/json/Contacts/downloadPhoto?authtoken='+this.setting('authtoken')+'&scope=crmapi&id=%@', this.resources.ZOHOCRM_URL, crm_fields_json['CONTACTID']);
+			contact_name.link = this.resources.ZOHOCRM_URL+'/crm/EntityInfo.do?module=Contacts&id='+crm_fields_json['CONTACTID'];
 			
 			var has_account = _.has(crm_fields_json, 'Account Name');
 			var account_name = {};
 			if (has_account) {
 				account_name.name = crm_fields_json['Account Name'];
-				account_name.link = helpers.fmt('%@/crm/EntityInfo.do?module=Accounts&id=%@', this.resources.ZOHOCRM_URL, crm_fields_json['ACCOUNTID']);
+				account_name.link = this.resources.ZOHOCRM_URL+'/crm/EntityInfo.do?module=Accounts&id='+crm_fields_json['ACCOUNTID'];
 			}
 			
 			var contact_owner = crm_fields_json['Contact Owner'];
 			var contact_email = _.result(crm_fields_json, 'Email', '');
+			contact_name.zdesk_userprofile_link = 'mailto:'+contact_email;
 			var phone = _.result(crm_fields_json, 'Phone', '');
 			var mobile = _.result(crm_fields_json, 'Mobile', '');
 			var department = _.result(crm_fields_json, 'Department', '');
@@ -203,18 +235,25 @@
 			contact_info.account_name = account_name;
 			contact_info.contact_owner = contact_owner;
 			contact_info.email = contact_email;
-			contact_info.has_phone = (phone !== "");
+			contact_info.has_phone = ((phone !== "")&&(phone !== undefined));
 			contact_info.phone = phone;
-			contact_info.has_mobile = (mobile !== "");
+                        contact_info.has_mobile = ((mobile !== "")&&(mobile !== undefined));
 			contact_info.mobile = mobile;
 			contact_info.other_fields = other_fields;
 
 			this.crm_data = contact_info;
 			this.crm_data.module = 'Contacts';
 			this.crm_data.rec_id = crm_fields_json['CONTACTID'];
-
-			this.switchTo('contact_info', {'contact': contact_info});
-
+			setKey(client, 'modal-content', JSON.stringify(this.crm_data));
+			var nophoto = "";
+			client.get('assetURL:contact-nophoto\\.png').then(function(data) {
+				nophoto = data['assetURL:contact-nophoto\\.png'];
+				switchTo('contact_info', {
+					'contact': contact_info,
+					'zohocrm_app': this.App.zohocrm_app, 
+					'nophoto': nophoto
+				});
+			});
 			// by default showing crm fields
 			this.switchSubTab('crm_fields', '');
 		}
@@ -222,10 +261,14 @@
 
 	showLeadInfo: function(data) {
 		if (typeof(data.response.nodata) != 'undefined') {
-			this.switchTo('nodata_screen');
+			switchTo('nodata_screen', {
+				'zohocrm_app': App.zohocrm_app
+			});
+			client.invoke('resize', { height: '40px' });
 		}
 		else if (typeof(data.response.error) != 'undefined') {
-			this.switchTo('error_screen');
+			switchTo('error_screen');
+			client.invoke('resize', { height: '40px' });
 		}
 		else {
 			var crm_fields = [];
@@ -243,13 +286,12 @@
 
 			var lead_name = {};
 			lead_name.name = _.result(crm_fields_json, 'First Name', '') + ' ' + crm_fields_json['Last Name'];
-			lead_name.link = helpers.fmt('%@/crm/EntityInfo.do?module=Leads&id=%@', this.resources.ZOHOCRM_URL, crm_fields_json['LEADID']);
-			lead_name.zdesk_userprofile_link = helpers.fmt('mailto:%@', this.email_id);
-			//lead_name.photo = helpers.fmt('%@/crm/private/json/Leads/downloadPhoto?authtoken='+this.setting('authtoken')+'&scope=crmapi&id=%@', this.resources.ZOHOCRM_URL, crm_fields_json['LEADID']);
+			lead_name.link = this.resources.ZOHOCRM_URL+'/crm/EntityInfo.do?module=Leads&id='+crm_fields_json['LEADID'];
 			
 			var company = _.result(crm_fields_json, 'Company', '');
 			var lead_owner = crm_fields_json['Lead Owner'];
 			var lead_email = _.result(crm_fields_json, 'Email', '');
+			lead_name.zdesk_userprofile_link = 'mailto:'+lead_email;
 			var phone = _.result(crm_fields_json, 'Phone', '');
 			var mobile = _.result(crm_fields_json, 'Mobile', '');
 			var lead_status = _.result(crm_fields_json, 'Lead Status', '');
@@ -295,9 +337,9 @@
 			lead_info.company = company;
 			lead_info.lead_owner = lead_owner;
 			lead_info.email = lead_email;
-			lead_info.has_phone = (phone !== "");
+                        lead_info.has_phone = ((phone !== "")&&(phone !== undefined));
 			lead_info.phone = phone;
-			lead_info.has_mobile = (mobile !== "");
+                        lead_info.has_mobile = ((mobile !== "")&&(mobile !== undefined));
 			lead_info.mobile = mobile;
 			lead_info.lead_status = lead_status;
 			lead_info.has_address = (address === '' ? false : true);
@@ -307,20 +349,32 @@
 			this.crm_data = lead_info;
 			this.crm_data.module = 'Leads';
 			this.crm_data.rec_id = crm_fields_json['LEADID'];
+			setKey(client, 'modal-content', JSON.stringify(this.crm_data));
 
-			this.switchTo('lead_info', {'lead': lead_info});
-
+			var nophoto = "";
+                        client.get('assetURL:contact-nophoto\\.png').then(function(data) {
+                                nophoto = data['assetURL:contact-nophoto\\.png'];
+                                switchTo('lead_info', {
+                                        'lead': lead_info,
+                                        'zohocrm_app': this.App.zohocrm_app,
+                                        'nophoto': nophoto
+                                });
+                        });
 			// by default showing crm fields
 			this.switchSubTab('crm_fields', '');
 		}
 	},
 
-	showAccountInfo: function(data) {
+	showAccountInfo: function(self, data) {
 		if (typeof(data.response.nodata) != 'undefined') {
-			this.switchTo('org_nodata_screen');
+			switchTo('org_nodata_screen', {
+                                'zohocrm_app': App.zohocrm_app
+                        });
+			client.invoke('resize', { height: '40px' });
 		}
 		else if (typeof(data.response.error) != 'undefined') {
-			this.switchTo('error_screen');
+			switchTo('error_screen');
+			client.invoke('resize', { height: '40px' });
 		}
 		else {
 			var crm_fields = [];
@@ -338,7 +392,7 @@
 
 			var account_name = {};
 			account_name.name = _.result(crm_fields_json, 'Account Name', '');
-			account_name.link = helpers.fmt('%@/crm/EntityInfo.do?module=Accounts&id=%@', this.resources.ZOHOCRM_URL, crm_fields_json['ACCOUNTID']);
+			account_name.link = this.resources.ZOHOCRM_URL+'/crm/EntityInfo.do?module=Accounts&id='+crm_fields_json['ACCOUNTID'];
 			
 			var industry = _.result(crm_fields_json, 'Industry', '');
 			var website = _.result(crm_fields_json, 'Website', '');
@@ -403,15 +457,15 @@
 			var account_info = {};
 			account_info.rec_id = crm_fields_json['ACCOUNTID'];
 			account_info.account_name = account_name;
-			account_info.has_website = (website !== "");
+                        account_info.has_website = ((website !== "")&&(website !== undefined));
 			account_info.website = website;
-			account_info.has_industry = (industry !== "");
+			account_info.has_industry = ((industry !== "")&&(industry !== undefined));
 			account_info.industry = industry;
 			account_info.account_owner = account_owner;
-			account_info.has_phone = (phone !== "");
+                        account_info.has_phone = ((phone !== "")&&(phone !== undefined));
 			account_info.phone = phone;
 			account_info.other_fields = other_fields;
-			if (this.current_location === 'organization_sidebar') {
+			if (self.current_location === 'organization_sidebar') {
 				account_info.show_backtocontact_link = false;
 			}
 			else {
@@ -421,8 +475,17 @@
 			this.crm_data = account_info;
 			this.crm_data.module = 'Accounts';
 			this.crm_data.rec_id = crm_fields_json['ACCOUNTID'];
+			setKey(client, 'modal-content', JSON.stringify(this.crm_data));
 
-			this.switchTo('account_info', {'account': account_info});
+                        var nophoto = "";
+                        client.get('assetURL:account-logo\\.png').then(function(data) {
+                                nophoto = data['assetURL:account-logo\\.png'];
+                                switchTo('account_info', {
+                                        'account': account_info,
+                                        'zohocrm_app': App.zohocrm_app,
+                                        'nophoto': nophoto
+                                });
+                        });
 
 			// by default showing crm fields
 			this.switchSubTab('crm_fields', '');
@@ -431,8 +494,6 @@
 
 	showRelatedRecords: function(data) {
 		var self = this;
-
-		this.showSpinner(false);
 
 		var finalData = {};
 
@@ -508,7 +569,7 @@
 					var potentialInfo = {};
 
 					potentialInfo['name'] = record['Potential Name'];
-					potentialInfo.link = helpers.fmt('%@/crm/EntityInfo.do?module=Potentials&id=%@', ZOHOCRM_URL, record['POTENTIALID']);
+					potentialInfo.link = ZOHOCRM_URL+'/crm/EntityInfo.do?module=Potentials&id='+record['POTENTIALID'];
 					potentialInfo['owner'] = record['Potential Owner'];
 					potentialInfo['amount'] = (_.has(record, 'Amount') ? record['Amount'] : "-");
 					potentialInfo['stage'] = record['Stage'];
@@ -541,7 +602,7 @@
 					activityInfo['orig_owner'] = orig_activity_owner;
 					activityInfo['subject'] = subject;
 					activityInfo['orig_subject'] = orig_subject;
-					activityInfo['link'] = helpers.fmt('%@/crm/EntityInfo.do?module=%@&id=%@', ZOHOCRM_URL, 'Calls', record['ACTIVITYID']);
+					activityInfo['link'] = ZOHOCRM_URL+'/crm/EntityInfo.do?module=Calls&id='+record['ACTIVITYID'];
 					
 					var callDateTime = (_.has(record, 'Call Start Time') ? record['Call Start Time'] : '');
 					var callDate = '--';
@@ -584,7 +645,7 @@
 					activityInfo['orig_owner'] = orig_activity_owner;
 					activityInfo['subject'] = subject;
 					activityInfo['orig_subject'] = orig_subject;
-					activityInfo['link'] = helpers.fmt('%@/crm/EntityInfo.do?module=%@&id=%@', ZOHOCRM_URL, 'Events', record['ACTIVITYID']);
+					activityInfo['link'] = ZOHOCRM_URL+'/crm/EntityInfo.do?module=Events&id='+record['ACTIVITYID'];
 
 					var venue = (_.has(record, 'Venue') ? record['Venue'] : '');
 					var eventDateTime = (_.has(record, 'Start DateTime') ? record['Start DateTime'] : '');
@@ -629,7 +690,7 @@
 					activityInfo['orig_owner'] = orig_activity_owner;
 					activityInfo['subject'] = subject;
 					activityInfo['orig_subject'] = orig_subject;
-					activityInfo['link'] = helpers.fmt('%@/crm/EntityInfo.do?module=%@&id=%@', ZOHOCRM_URL, 'Tasks', record['ACTIVITYID']);
+					activityInfo['link'] = ZOHOCRM_URL+'/crm/EntityInfo.do?module=Tasks&id='+record['ACTIVITYID'];
 
 					var status = (_.has(record, 'Status') ? record['Status'] : '--');
 					var priority = (_.has(record, 'Priority') ? record['Priority'] : '--');
@@ -654,104 +715,45 @@
 		if (typeof(finalData.template_name) == "undefined") {
 			finalData.template_name = 'subtab-nodata';
 		}
-		var html = this.renderTemplate(finalData.template_name, {'data': finalData});
-		this.$('.data_div').html(html);
+		var html = renderTemplate(finalData.template_name, {
+				'data': finalData, 
+				'zohocrm_app': App.zohocrm_app
+			   });
+		window.$('.data_div').html(html);
 
-		if (this.$('.activity_type').length > 0 && activityType !== '') {
-			this.$('.activity_type').val(activityType);
+		if (window.$('.activity_type').length > 0 && activityType !== '') {
+			window.$('.activity_type').val(activityType);
 		}
 	},
 
 	handleSubTabFailure: function() {
-		this.showSpinner(false);
-
-		var html = this.renderTemplate('subtab-error', {});
+		var html = renderTemplate('subtab-error', {});
 		this.$('.data_div').html(html);
 	},
 
 	switchSubTab: function(tab_name, module_name) {
-		this.switchNavTo(tab_name);
-		this.$('.data_div').html('');
-		this.showSpinner(true);
-
-		if (tab_name == 'crm_fields') {
-			var html = this.renderTemplate(tab_name, {'crm_fields': this.crm_data.other_fields});
-			this.$('.data_div').html(html);
-
-			this.showSpinner(false);
-		}
-		else if (tab_name == 'open_activities') {
-			this.fetchZCRMRelatedRecords(this.crm_data.module, this.crm_data.rec_id, 'Calls');
-		}
-		else {			
-      		this.fetchZCRMRelatedRecords(this.crm_data.module, this.crm_data.rec_id, module_name);
-		}
+		var self = this;
+		getKey(client, "modal-content").then(function(data) {
+			var modalData = JSON.parse(data);
+			self.switchNavTo(tab_name);
+			$('.data_div').html('');
+			if (tab_name == 'crm_fields') {
+				var html = renderTemplate(tab_name, {'crm_fields': modalData.other_fields});
+				$('.data_div').html(html);
+			}
+			else if (tab_name == 'open_activities') {
+				self.fetchZCRMRelatedRecords(modalData.module, modalData.rec_id, 'Calls');
+			}
+			else {			
+	      			self.fetchZCRMRelatedRecords(modalData.module, modalData.rec_id, module_name);
+			}
+		});
 	},
-
-    fetchZCRMContactInfo: function(email_id) {
-    	this.ajax('get_zcrm_contact_info', email_id);
-    },
-
-    fetchZCRMLeadInfo: function(email_id) {
-    	this.ajax('get_zcrm_lead_info', email_id);
-    },
-
-    fetchZCRMAccountInfo: function(accountname) {
-        this.ajax('get_zcrm_account_info', accountname);
-    },
-
-    fetchZCRMRelatedRecords: function(module, recId, relatedModule) {
-    	this.ajax('get_related_records', module, recId, relatedModule);
-    },
-
-    requests: {
-		get_zcrm_contact_info: function(email_id) {
-			return {
-				url: helpers.fmt('%@/crm/private/json/Contacts/getSearchRecordsByPDC?authtoken={{setting.authtoken}}&scope=crmapi&selectColumns=All&searchColumn=email&searchValue=%@', this.resources.ZOHOCRM_URL, email_id),
-				type: 'GET',
-				dataType: 'json',
-				secure: true
-			};
-		},
-		get_zcrm_lead_info: function(email_id) {
-			return {
-				url: helpers.fmt('%@/crm/private/json/Leads/getSearchRecordsByPDC?authtoken={{setting.authtoken}}&scope=crmapi&selectColumns=All&searchColumn=email&searchValue=%@', this.resources.ZOHOCRM_URL, email_id),
-				type: 'GET',
-				dataType: 'json',
-				secure: true
-			};
-		},
-		get_zcrm_account_info: function(accountname) {
-			return {
-				url: helpers.fmt('%@/crm/private/json/Accounts/getSearchRecordsByPDC?authtoken={{setting.authtoken}}&scope=crmapi&selectColumns=All&searchColumn=accountname&searchValue=%@', this.resources.ZOHOCRM_URL, accountname),
-				type: 'GET',
-				dataType: 'json',
-				secure: true
-			};
-		},
-		get_related_records: function(module, recId, relatedModule) {
-			return {
-				url: helpers.fmt('%@/crm/private/json/%@/getRelatedRecords?authtoken={{setting.authtoken}}&scope=crmapi&id=%@&parentModule=%@', this.resources.ZOHOCRM_URL, relatedModule, recId, module),
-				type: 'GET',
-				dataType: 'json',
-				secure: true
-			};
-		}
-    },
-
-	showSpinner: function(show) {
-      if (show) {
-        this.$('.loading_spinner').css('display', 'block');
-      } else {
-        this.$('.loading_spinner').css('display', 'none');
-      }
-    },
-
     switchNavTo: function(itemClass) {
       itemClass = '.' + itemClass;
 
-      this.$('.tabs-menu li').removeClass('current');
-      this.$('.tabs-menu li' + itemClass).addClass('current');
+      window.$('.tabs-menu li').removeClass('current');
+      window.$('.tabs-menu li' + itemClass).addClass('current');
     },
 
     formatDate: function(date, format) {
@@ -809,6 +811,61 @@
 
 	    return format;
 	}
-  };
+}	
 
-}());
+function switchTo(template_name, context) {
+	$("#content").html('');
+	if(template_name==='loading_screen'){
+		$("#sub-content").html('');
+	}
+	var target = $("#content");
+	var template_id = "#" + template_name;
+	var source = $(template_id).html();
+	var template = Handlebars.compile(source);
+	if (context) {
+		var html = template(context);
+	} else {
+		var html = template();
+	}
+	$(target).html(html);
+}
+function renderTemplate(template_name, context) {
+	$("#sub-content").html('');
+        var target = $("#sub-content");
+        var template_id = "#" + template_name;
+        var source = $(template_id).html();
+        var template = Handlebars.compile(source);
+        if (context) {
+                var html = template(context);
+        } else {
+                var html = template();
+        }
+        $(target).html(html);
+}
+function openModal(client){
+	client.invoke('instances.create', {
+          location: 'modal',
+          url: 'assets/iframe.html'
+	}).then(function(modalContext) {
+		// The modal is on the screen now!
+		var modalClient = client.instance(modalContext['instances.create'][0].instanceGuid);
+		setKey(client, 'display-model', 'hide');
+		modalClient.on('modal.close', function() {
+			// The modal has been closed.
+			setKey(client, 'display-model', 'show');
+			$("a.open-ml.bold:nth-child(2)").removeClass("open-ml").addClass("open-model");
+		});
+	});
+}
+
+function setKey(client, key, val) {
+	return client.metadata().then(function(metadata) {
+		return localStorage.setItem(metadata.installationId + ":" + key, val);
+	});
+}
+
+function getKey(client, key) {
+	return client.metadata().then(function(metadata) {
+		return localStorage.getItem(metadata.installationId + ":" + key);
+	});
+}
