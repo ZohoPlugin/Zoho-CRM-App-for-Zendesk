@@ -2,6 +2,8 @@
   "app": {
     "description": "Help your customer support agents to view Zoho CRM data inside every ticket",
     "name": "Zoho CRM",
+    "installation_instructions": "",
+    "long_description": "",
     "parameters": {
       "authtoken" : { "label": "Auth Token", "helpText": "To know how to get an Auth Token, please visit: https://www.zoho.com/crm/help/zoho-crm-for-zendesk.html"},
       "zohoeu": { "label": "Are you using Zoho CRM EU?", "helpText": "Enable this checkbox if you are using the Europe datacenter of Zoho (crm.zoho.eu)."}
