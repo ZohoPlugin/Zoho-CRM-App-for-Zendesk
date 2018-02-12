@@ -176,7 +176,11 @@ var App = {
                         });
 
 			var contact_name = {};
-			contact_name.name = _.result(crm_fields_json, 'First Name', '') + ' ' + crm_fields_json['Last Name'];
+			if(((crm_fields_json['First Name'])===undefined)){
+				contact_name.name = crm_fields_json['Last Name'];
+			}else{
+				contact_name.name = _.result(crm_fields_json, 'First Name', '') + ' ' + crm_fields_json['Last Name'];
+			}
 			contact_name.link = this.resources.ZOHOCRM_URL+'/crm/EntityInfo.do?module=Contacts&id='+crm_fields_json['CONTACTID'];
 			
 			var has_account = _.has(crm_fields_json, 'Account Name');
@@ -285,7 +289,11 @@ var App = {
 			});
 
 			var lead_name = {};
-			lead_name.name = _.result(crm_fields_json, 'First Name', '') + ' ' + crm_fields_json['Last Name'];
+                        if(((crm_fields_json['First Name'])===undefined)){
+                                lead_name.name = crm_fields_json['Last Name'];
+                        }else{
+                                lead_name.name = _.result(crm_fields_json, 'First Name', '') + ' ' + crm_fields_json['Last Name'];
+                        }
 			lead_name.link = this.resources.ZOHOCRM_URL+'/crm/EntityInfo.do?module=Leads&id='+crm_fields_json['LEADID'];
 			
 			var company = _.result(crm_fields_json, 'Company', '');
