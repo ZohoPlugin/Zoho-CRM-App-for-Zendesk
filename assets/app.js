@@ -81,7 +81,7 @@ var App = {
 	},
 	fetchZCRMContactInfo (email_id) {
                 var fetchSelf = {
-                        url: App.resources.ZOHOCRM_URL+'/crm/private/json/Contacts/getSearchRecordsByPDC?authtoken={{setting.authtoken}}&scope=crmapi&selectColumns=All&searchColumn=email&searchValue='+email_id,
+                        url: App.resources.ZOHOCRM_URL+'/crm/private/json/Contacts/getSearchRecordsByPDC?authtoken={{setting.authtoken}}&scope=crmapi&selectColumns=All&searchColumn=email&searchValue='+encodeURIComponent(email_id),
                         type: 'GET',
                         dataType: 'json',
 			secure: true
@@ -96,7 +96,7 @@ var App = {
         },
 	fetchZCRMLeadInfo (email_id) {
                 var fetchSelf = {
-                        url: App.resources.ZOHOCRM_URL+'/crm/private/json/Leads/getSearchRecordsByPDC?authtoken={{setting.authtoken}}&scope=crmapi&selectColumns=All&searchColumn=email&searchValue='+email_id,
+                        url: App.resources.ZOHOCRM_URL+'/crm/private/json/Leads/getSearchRecordsByPDC?authtoken={{setting.authtoken}}&scope=crmapi&selectColumns=All&searchColumn=email&searchValue='+encodeURIComponent(email_id),
                         type: 'GET',
                         dataType: 'json',
 			secure: true
@@ -112,7 +112,7 @@ var App = {
 
 	fetchZCRMAccountInfo (account_name) {
                 var fetchSelf = {
-                        url: App.resources.ZOHOCRM_URL+'/crm/private/json/Accounts/getSearchRecordsByPDC?authtoken={{setting.authtoken}}&scope=crmapi&selectColumns=All&searchColumn=accountname&searchValue='+account_name,
+                      	url: App.resources.ZOHOCRM_URL+'/crm/private/json/Accounts/getSearchRecordsByPDC?authtoken={{setting.authtoken}}&scope=crmapi&selectColumns=All&searchColumn=accountname&searchValue='+encodeURIComponent(account_name),
                         type: 'GET',
                         dataType: 'json',
 			secure: true
